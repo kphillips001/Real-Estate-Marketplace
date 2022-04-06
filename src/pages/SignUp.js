@@ -5,20 +5,21 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
 } from 'firebase/auth';
+import { setDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase.config';
 import { ReactComponent as ArrowRightIcon } from '../assets/svg/keyboardArrowRightIcon.svg';
 import visibilityIcon from '../assets/svg/visibilityIcon.svg';
 
 function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
-  const [fromData, setFormData] = useState({
+  const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
   });
 
   // destructure from the form data
-  const { name, email, password } = fromData;
+  const { name, email, password } = formData;
 
   const navigate = useNavigate();
 
@@ -53,6 +54,18 @@ function SignUp() {
       updateProfile(auth.currentUser, {
         displayName: name,
       });
+
+      // don't want to change the formdata state
+      // create an object and spread across the formdata (copying)
+      const formDataCopy = { ...formData };
+      // Don't want password to get submitted to db,
+      // so take form data copy, so can delete password from the object
+      // so doesn't get put into database
+      delete formDataCopy.password;
+      // add timestamp
+      formDataCopy.timestamp = serverTimestamp();
+      // updates the database, and adds user to user collection
+      await setDoc(doc(db, 'users', user.uid), formDataCopy);
 
       // redirect
       navigate('/');
